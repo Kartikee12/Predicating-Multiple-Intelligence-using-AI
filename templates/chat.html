@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Intelligence Guesser - Chat</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    body {
+      background-color: #f4f4f4;
+      font-family: Arial, sans-serif;
+    }
+    .chat-container {
+      margin: 50px auto;
+      max-width: 600px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .question {
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    .form-check {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <h3>Assessment</h3>
+    <div class="mb-4">
+      <p class="question">{{ question.question }}</p>
+      {% if question.type == 'mcq' %}
+        <form method="POST">
+          {% for option in question.options %}
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="answer" id="option{{ loop.index0 }}" value="{{ option }}" required>
+              <label class="form-check-label" for="option{{ loop.index0 }}">
+                {{ option }}
+              </label>
+            </div>
+          {% endfor %}
+          <button type="submit" class="btn btn-success mt-3">Submit Answer</button>
+        </form>
+      {% else %}
+        <form method="POST">
+          <div class="form-group">
+            <textarea class="form-control" name="answer" rows="3" placeholder="Your answer..." required></textarea>
+          </div>
+          <button type="submit" class="btn btn-success">Submit Answer</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

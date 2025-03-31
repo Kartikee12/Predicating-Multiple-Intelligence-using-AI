@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Assessment Results</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <style>
+    body { background-color: #f4f4f4; }
+    .result-container { margin: 50px auto; max-width: 600px; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .voice-mode-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      font-size: 24px;
+      padding: 10px 15px;
+      border-radius: 50%;
+    }
+    .voice-active {
+      background-color: #28a745;
+      color: white;
+    }
+    .voice-status {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background-color: rgba(0,0,0,0.7);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="result-container">
+    <h3>Assessment Results</h3>
+    <pre id="resultText">{{ result }}</pre>
+    <a href="{{ url_for('index') }}" class="btn btn-primary">Restart Assessment</a>
+  </div>
+  
+  <button class="btn voice-mode-btn" id="voiceMode" aria-label="Enable voice mode for accessibility">
+    <i class="fas fa-microphone"></i>
+  </button>
+  
+  <div class="voice-status" id="voiceStatus">Listening...</div>
+  
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  
+  <!-- Voice interaction scripts -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const voiceButton = document.getElementById('voiceMode');
+      const voiceStatus = document.getElementById('voiceStatus');
+      const resultText = document.getElementById('resultText');
+      
+      // Check if the browser supports speech synthesis
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const SpeechSynthesis = window.speechSynthesis;
+      
+      if (!SpeechSynthesis) {
+        alert("Sorry, your browser doesn't support speech synthesis.");
+        return;
+      }
+      
+      // Voice mode state
+      let voiceMode = false;
+      
+      // Check if voice mode was previously enabled (using localStorage)
+      if (localStorage.getItem('voiceMode') === 'true') {
+        enableVoiceMode();
+      }
+      
+      // Function to speak text
+      function speak(text) {
+        if (!voiceMode) return;
+        
+        // Cancel any ongoing speech
+        if (SpeechSynthesis.speaking) {
+          SpeechSynthesis.cancel();
+        }
+        
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1.0;
+        SpeechSynthesis.speak(utterance);
+      }
+      
+      // Announce page elements when voice mode is enabled
+      function announcePage() {
+        // For results page, read the title and results
+        speak("Assessment Results: " + resultText.textContent + " Press the restart button to take the assessment again.");
+      }
+      
+      // Enable voice mode
+      function enableVoiceMode() {
+        voiceMode = true;
+        localStorage.setItem('voiceMode', 'true');
+        voiceButton.classList.add('voice-active');
+        announcePage();
+        
+        if (SpeechRecognition) {
+          const recognition = new SpeechRecognition();
+          recognition.continuous = false;
+          recognition.lang = 'en-US';
+          recognition.interimResults = false;
+          
+          recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript.toLowerCase().trim();
+            
+            // Process restart command
+            if (transcript.includes('restart') || transcript.includes('start over') || transcript.includes('try again')) {
+              speak("Restarting assessment");
+              window.location.href = "{{ url_for('index') }}";
+            } else if (transcript.includes('read') || transcript.includes('results')) {
+              // Read results again
+              announcePage();
+            }
+          };
+          
+          recognition.onend = function() {
+            if (voiceMode) {
+              // Restart recognition after a short delay
+              setTimeout(() => {
+                if (voiceMode) {
+                  recognition.start();
+                }
+              }, 1000);
+            }
+          };
+          
+          try {
+            recognition.start();
+            voiceStatus.style.display = 'block';
+          } catch (error) {
+            console.error("Recognition error:", error);
+          }
+        }
+      }
+      
+      // Disable voice mode
+      function disableVoiceMode() {
+        voiceMode = false;
+        localStorage.setItem('voiceMode', 'false');
+        voiceButton.classList.remove('voice-active');
+        if (SpeechSynthesis.speaking) {
+          SpeechSynthesis.cancel();
+        }
+        voiceStatus.style.display = 'none';
+      }
+      
+      // Toggle voice mode when button is clicked
+      voiceButton.addEventListener('click', function() {
+        if (voiceMode) {
+          disableVoiceMode();
+        } else {
+          enableVoiceMode();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
